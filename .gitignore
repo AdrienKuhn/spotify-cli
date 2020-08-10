@@ -1,0 +1,4 @@
+.idea
+cache
+spotify_cli.egg*
+*/**/*.pyc
