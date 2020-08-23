@@ -17,8 +17,9 @@ def follow():
 
 @follow.command("liked-tracks-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
+@click.option('--all-artists', is_flag=True, default=False, help="If true, will process liked tracks secondary artists")
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to actually follow artists.")
-def liked_tracks_artists(batch_size, commit):
+def liked_tracks_artists(batch_size, all_artists, commit):
     """Follow artists from all liked tracks"""
     try:
         logging.info("Starting Spotify API OAuth flow")
@@ -33,11 +34,14 @@ def liked_tracks_artists(batch_size, commit):
         # Fetch liked tracks
         liked_tracks = _fetch_liked_tracks(sp, batch_size)
 
+        # Extract artists from liked tracks
+        liked_tracks_artists = _extract_liked_tracks_artists(liked_tracks, all_artists)
+
         # Fetch followed artists
         followed_artists = _fetch_followed_artists(sp, batch_size)
 
         # Extract artists to follow
-        artists_to_follow = _extract_artists_to_follow(liked_tracks, followed_artists)
+        artists_to_follow = _extract_artists_to_follow(liked_tracks_artists, followed_artists)
 
         if artists_to_follow:
             # Follow liked tracks artists
@@ -55,8 +59,9 @@ def liked_tracks_artists(batch_size, commit):
 
 @follow.command("orphan-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
-def orphan_artists(batch_size):
-    """List orphan artists, artists followed without any liked tracks"""
+@click.option('--all-artists', is_flag=True, default=False, help="If true, will process liked tracks secondary artists")
+def orphan_artists(batch_size, all_artists):
+    """List orphan artists"""
     try:
         logging.info("Starting Spotify API OAuth flow")
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -70,11 +75,14 @@ def orphan_artists(batch_size):
         # Fetch liked tracks
         liked_tracks = _fetch_liked_tracks(sp, batch_size)
 
+        # Extract artists from liked tracks
+        liked_tracks_artists = _extract_liked_tracks_artists(liked_tracks, all_artists)
+
         # Fetch followed artists
         followed_artists = _fetch_followed_artists(sp, batch_size)
 
         # Extract orphan artists
-        orphans = _extract_orphan_artists(liked_tracks, followed_artists)
+        orphans = _extract_orphan_artists(liked_tracks_artists, followed_artists)
 
         if orphans:
             logging.error(f"Found {len(orphans)} orphan artist{'s' if len(orphans) > 1 else ''}:")
@@ -116,14 +124,26 @@ def _fetch_followed_artists(sp, batch_size):
     return artists
 
 
-def _extract_artists_to_follow(liked_tracks, followed_artists):
+def _extract_artists_to_follow(liked_tracks_artists, followed_artists):
     followed_artist_ids = [artist['id'] for artist in followed_artists]
-    artists_to_follow = [liked_track['track']['artists'][0] for liked_track in liked_tracks if liked_track['track']['artists'][0]['id'] not in followed_artist_ids]
+    artists_to_follow = [artist for artist in liked_tracks_artists if artist['id'] not in followed_artist_ids]
     return artists_to_follow
 
 
-def _extract_orphan_artists(tracks, followed_artists):
-    liked_tracks_artists_ids = [item['track']['artists'][0]['id'] for item in tracks]
+def _extract_liked_tracks_artists(liked_tracks, all_artists=False):
+    liked_tracks_artists = []
+    for liked_track in liked_tracks:
+        if all_artists:
+            for artist in liked_track['track']['artists']:
+                if artist not in liked_tracks_artists:
+                    liked_tracks_artists.append(artist)
+        else:
+            liked_tracks_artists.append(liked_track['track']['artists'][0])
+    return liked_tracks_artists
+
+
+def _extract_orphan_artists(liked_tracks_artists, followed_artists):
+    liked_tracks_artists_ids = [artist['id'] for artist in liked_tracks_artists]
     orphans = [artist for artist in followed_artists if artist['id'] not in liked_tracks_artists_ids]
     return orphans
 
