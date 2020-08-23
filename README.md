@@ -25,8 +25,8 @@ Commands:
 ### Follow artists from liked tracks
 
 ```bash
-spotify-cli artists follow liked-tracks --help
-Usage: spotify-cli artists follow liked-tracks [OPTIONS]
+spotify-cli artists follow liked-tracks-artists --help
+Usage: spotify-cli artists follow liked-tracks-artists [OPTIONS]
 
   Follow artists from all liked tracks
 
