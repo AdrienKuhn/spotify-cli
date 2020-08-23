@@ -17,7 +17,7 @@ def follow():
 
 @follow.command("liked-tracks-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
-@click.option('--all-artists', is_flag=True, default=False, help="If true, will process liked tracks secondary artists")
+@click.option('--all-artists', is_flag=True, default=False, help="If set, will process liked tracks secondary artists")
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to actually follow artists.")
 def liked_tracks_artists(batch_size, all_artists, commit):
     """Follow artists from all liked tracks"""
@@ -59,7 +59,7 @@ def liked_tracks_artists(batch_size, all_artists, commit):
 
 @follow.command("orphan-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
-@click.option('--all-artists', is_flag=True, default=False, help="If true, will process liked tracks secondary artists")
+@click.option('--all-artists', is_flag=True, default=False, help="If set, will process liked tracks secondary artists")
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to actually unfollow artists.")
 def orphan_artists(batch_size, all_artists, commit):
     """Unfollow orphan artists"""
