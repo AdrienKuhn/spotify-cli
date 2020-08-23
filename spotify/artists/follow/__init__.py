@@ -34,16 +34,53 @@ def liked_tracks_artists(batch_size, commit):
         liked_tracks = _fetch_liked_tracks(sp, batch_size)
 
         # Fetch followed artists
-        followed_artist_ids = _fetch_followed_artists(sp, batch_size)
+        followed_artists = _fetch_followed_artists(sp, batch_size)
 
         # Extract artists to follow
-        artist_ids_to_follow = _extract_artists_to_follow(liked_tracks, followed_artist_ids)
+        artists_to_follow = _extract_artists_to_follow(liked_tracks, followed_artists)
 
-        # [[artist for artist in artists if artist not in followed_artists], [artist for artist in followed_artists if artist not in artists]]
-
-        if artist_ids_to_follow:
+        if artists_to_follow:
             # Follow liked tracks artists
-            _follow_artists(sp, artist_ids_to_follow, batch_size, commit)
+            _follow_artists(sp, artists_to_follow, batch_size, commit)
+        else:
+            logging.warning(f"No new artist to follow.")
+
+        logging.info("Done!")
+
+    except Exception as err:
+        print("Exception : %s\n" % err)
+        raise click.Abort()\
+
+
+
+@follow.command("orphan-artists")
+@click.option('--batch-size', type=click.IntRange(1, 50), default=50)
+def orphan_artists(batch_size):
+    """List orphan artists, artists followed without any liked tracks"""
+    try:
+        logging.info("Starting Spotify API OAuth flow")
+        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+            scope=scope,
+            redirect_uri=redirect_uri,
+            show_dialog=True,
+            cache_path=cache_path))
+
+        logging.info(f"Batch size is set to {batch_size}")
+
+        # Fetch liked tracks
+        liked_tracks = _fetch_liked_tracks(sp, batch_size)
+
+        # Fetch followed artists
+        followed_artists = _fetch_followed_artists(sp, batch_size)
+
+        # Extract orphan artists
+        orphans = _extract_orphan_artists(liked_tracks, followed_artists)
+
+        if orphans:
+            logging.error(f"Found {len(orphans)} orphan artist{'s' if len(orphans) > 1 else ''}:")
+            [logging.error(f"- {orphan['name']}") for orphan in orphans]
+        else:
+            logging.info(f"No orphan artist found.")
 
         logging.info("Done!")
 
@@ -76,27 +113,19 @@ def _fetch_followed_artists(sp, batch_size):
         artists.extend(results['artists']['items'])
     logging.info(f"Fetched {results['artists']['total']} artists")
 
-    artist_ids = [artist['id'] for artist in artists]
-
-    return artist_ids
+    return artists
 
 
-def _extract_artists_to_follow(tracks, followed_artist_ids):
-    artists_to_follow = []
-
-    for idx, item in enumerate(tracks):
-        track = item['track']
-        logging.debug(f"Processing #{idx + 1} {track['name']}- {track['artists'][0]['name']}")
-
-        if (
-                track['artists'][0]['id'] not in followed_artist_ids
-                and track['artists'][0]['id'] not in artists_to_follow
-        ):
-            logging.info(f"Adding {track['artists'][0]['name']} to the list of artists to follow")
-            artists_to_follow.append(track['artists'][0]['id'])
-
-    logging.warning(f"Found {len(artists_to_follow)} new artist{'s' if len(artists_to_follow) > 1 else ''} to follow")
+def _extract_artists_to_follow(liked_tracks, followed_artists):
+    followed_artist_ids = [artist['id'] for artist in followed_artists]
+    artists_to_follow = [liked_track['track']['artists'][0] for liked_track in liked_tracks if liked_track['track']['artists'][0]['id'] not in followed_artist_ids]
     return artists_to_follow
+
+
+def _extract_orphan_artists(tracks, followed_artists):
+    liked_tracks_artists_ids = [item['track']['artists'][0]['id'] for item in tracks]
+    orphans = [artist for artist in followed_artists if artist['id'] not in liked_tracks_artists_ids]
+    return orphans
 
 
 def _follow_artists(sp, artists, batch_size, commit):
@@ -104,17 +133,19 @@ def _follow_artists(sp, artists, batch_size, commit):
         logging.warning(f"Will follow {len(artists)} artists")
 
         logging.info("Following artists...")
-        for i in range(0, len(artists), batch_size):
-            if i + batch_size > len(artists):
-                limit = len(artists) - i
+        artist_ids_to_follow = [artist['id'] for artist in artists]
+        for i in range(0, len(artist_ids_to_follow), batch_size):
+            if i + batch_size > len(artist_ids_to_follow):
+                limit = len(artist_ids_to_follow) - i
             else:
                 limit = batch_size
 
             # Follow artists per batch
-            batch = artists[i:i + limit]
+            batch = artist_ids_to_follow[i:i + limit]
             sp.user_follow_artists(batch)
-            logging.info(f"Followed {i + limit}/{len(artists)} artists...")
+            logging.info(f"Followed {i + limit}/{len(artist_ids_to_follow)} artists...")
 
     else:
-        logging.warning(f"Would have followed {len(artists)} artist{'s' if len(artists) > 1 else ''}. "
-                        f"Use --commit flag to proceed.")
+        logging.warning(f"Would have followed {len(artists)} artist{'s' if len(artists) > 1 else ''}:")
+        [logging.warning(f"- {artist['name']}") for artist in artists]
+        logging.warning(f"Use --commit flag to proceed.")
