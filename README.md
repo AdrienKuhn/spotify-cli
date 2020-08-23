@@ -39,20 +39,20 @@ Options:
   --help                      Show this message and exit
 ```
 
-### List orphans artists
+### Unfollow orphans artists
 
-List followed artists without liked tracks in library
+Unfollow artists without liked tracks in library
 
 ```bash
-spotify-cli artists follow orphan-artists --help
 Usage: spotify-cli artists follow orphan-artists [OPTIONS]
 
-  List orphan artists
+  Unfollow orphan artists
 
 Options:
   --batch-size INTEGER RANGE
   --all-artists               If true, will process liked tracks secondary
                               artists
 
+  --commit                    Use this flag to actually unfollow artists.
   --help                      Show this message and exit.
 ```

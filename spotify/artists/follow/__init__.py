@@ -60,8 +60,9 @@ def liked_tracks_artists(batch_size, all_artists, commit):
 @follow.command("orphan-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--all-artists', is_flag=True, default=False, help="If true, will process liked tracks secondary artists")
-def orphan_artists(batch_size, all_artists):
-    """List orphan artists"""
+@click.option('--commit', is_flag=True, default=False, help="Use this flag to actually unfollow artists.")
+def orphan_artists(batch_size, all_artists, commit):
+    """Unfollow orphan artists"""
     try:
         logging.info("Starting Spotify API OAuth flow")
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -85,8 +86,7 @@ def orphan_artists(batch_size, all_artists):
         orphans = _extract_orphan_artists(liked_tracks_artists, followed_artists)
 
         if orphans:
-            logging.error(f"Found {len(orphans)} orphan artist{'s' if len(orphans) > 1 else ''}:")
-            [logging.error(f"- {orphan['name']}") for orphan in orphans]
+            _unfollow_artists(sp, orphans, batch_size, commit)
         else:
             logging.info(f"No orphan artist found.")
 
@@ -164,6 +164,29 @@ def _follow_artists(sp, artists, batch_size, commit):
             batch = artist_ids_to_follow[i:i + limit]
             sp.user_follow_artists(batch)
             logging.info(f"Followed {i + limit}/{len(artist_ids_to_follow)} artists...")
+
+    else:
+        logging.warning(f"Would have followed {len(artists)} artist{'s' if len(artists) > 1 else ''}:")
+        [logging.warning(f"- {artist['name']}") for artist in artists]
+        logging.warning(f"Use --commit flag to proceed.")
+
+
+def _unfollow_artists(sp, artists, batch_size, commit):
+    if commit:
+        logging.warning(f"Will unfollow {len(artists)} artists")
+
+        logging.info("Unfollowing artists...")
+        artist_ids_to_unfollow = [artist['id'] for artist in artists]
+        for i in range(0, len(artist_ids_to_unfollow), batch_size):
+            if i + batch_size > len(artist_ids_to_unfollow):
+                limit = len(artist_ids_to_unfollow) - i
+            else:
+                limit = batch_size
+
+            # Unfollow artists per batch
+            batch = artist_ids_to_unfollow[i:i + limit]
+            sp.user_unfollow_artists(batch)
+            logging.info(f"Unfollowed {i + limit}/{len(artist_ids_to_unfollow)} artists...")
 
     else:
         logging.warning(f"Would have followed {len(artists)} artist{'s' if len(artists) > 1 else ''}:")
