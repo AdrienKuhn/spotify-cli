@@ -138,7 +138,9 @@ def _extract_liked_tracks_artists(liked_tracks, all_artists=False):
                 if artist not in liked_tracks_artists:
                     liked_tracks_artists.append(artist)
         else:
-            liked_tracks_artists.append(liked_track['track']['artists'][0])
+            artist = liked_track['track']['artists'][0]
+            if artist not in liked_tracks_artists:
+                liked_tracks_artists.append(artist)
     return liked_tracks_artists
 
 
