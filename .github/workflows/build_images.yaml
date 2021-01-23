@@ -29,7 +29,7 @@ jobs:
           TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:${SHORTREF}"
 
           # Add the branch name as tag
-          TAGS="$TAGS,${GITHUB_REF##*/}"
+          TAGS="$TAGS,${DOCKER_IMAGE}:${GITHUB_REF##*/}"
 
           # If the VERSION looks like a version number, assume that
           # this is the most recent version of the image and also
