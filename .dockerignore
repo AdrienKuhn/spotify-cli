@@ -1,0 +1,11 @@
+.idea
+.git
+.cache
+cache
+*.egg-info
+*.egg/
+**/*.pyc
+**/__pycache__
+*.pyc
+*.swp
+*.md
