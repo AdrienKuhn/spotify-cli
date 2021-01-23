@@ -6,7 +6,6 @@ on:
     branches:
       - master
       - develop
-      - test_builds
 
 jobs:
   docker:
@@ -27,6 +26,9 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
           TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:${SHORTREF}"
+
+          # Add the branch name as tag
+          TAGS="$TAGS,${DOCKER_IMAGE}:${GITHUB_REF##*/}"
 
           # If the VERSION looks like a version number, assume that
           # this is the most recent version of the image and also
