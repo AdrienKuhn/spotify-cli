@@ -1,5 +1,6 @@
 .idea
 .git
+.github
 .cache
 cache
 *.egg-info
