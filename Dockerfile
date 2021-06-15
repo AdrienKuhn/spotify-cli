@@ -12,4 +12,6 @@ RUN pip install .
 FROM python:3.7-slim AS runtime-image
 COPY --from=compile-image /opt/venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
+RUN useradd -ms /bin/sh spotify
+USER spotify
 CMD spotify-cli
