@@ -13,5 +13,5 @@ FROM python:3.7-slim AS runtime-image
 COPY --from=compile-image /opt/venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 RUN useradd -ms /bin/sh -u 1000 spotify
-USER spotify
+USER 1000
 CMD spotify-cli
