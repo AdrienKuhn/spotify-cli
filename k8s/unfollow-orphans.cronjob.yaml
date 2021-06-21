@@ -1,0 +1,55 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: spotify-cli-unfollow-orphans
+  namespace: spotify-cli
+spec:
+  schedule: '@daily'
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: spotify-cli-unfollow-orphans
+            image: krewh/spotify-cli:0.0.9
+            imagePullPolicy: IfNotPresent
+            command:
+            - "spotify-cli"
+            - "artists"
+            - "follow"
+            - "orphan-artists"
+            - "--batch-size"
+            - "50"
+            - "--all-artists"
+            - "--commit"
+            env:
+            - name: SPOTIPY_CLIENT_ID
+              value: changeMe
+            - name: SPOTIPY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: client
+                  key: SPOTIPY_CLIENT_SECRET
+            - name: SPOTIPY_REDIRECT_URI
+              value: 'http://localhost:8000'
+            - name: CACHE_PATH
+                value: "/secrets/cache"
+            resources:
+              requests:
+                memory: 128Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              runAsNonRoot: true
+            volumeMounts:
+            - name: cache
+              mountPath: 'secrets'
+              readOnly: true
+          volumes:
+            - name: cache
+              secret:
+                secretName: cache
+          restartPolicy: Never
+      activeDeadlineSeconds: 120
+      backoffLimit: 3
