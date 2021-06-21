@@ -1,10 +1,11 @@
 import click
 import spotipy
 import logging
+import os
 from spotipy.oauth2 import SpotifyOAuth
 scope = "user-library-read,user-follow-read,user-follow-modify"
 redirect_uri = "http://localhost:8000/callback"
-cache_path = "cache"
+cache_path = os.getenv("CACHE_PATH", "cache")
 
 
 @click.group()
