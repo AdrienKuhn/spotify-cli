@@ -22,6 +22,13 @@ spec:
             - "--batch-size"
             - "50"
             - "--commit"
+            lifecycle:
+              postStart:
+                exec:
+                  command:
+                    - /bin/sh
+                    - -c
+                    - cp /secrets/cache /tmp/cache
             env:
             - name: SPOTIPY_CLIENT_ID
               value: changeMe
@@ -33,7 +40,7 @@ spec:
             - name: SPOTIPY_REDIRECT_URI
               value: 'http://localhost:8000'
             - name: CACHE_PATH
-              value: "/secrets/cache"
+              value: "/tmp/cache"
             resources:
               requests:
                 memory: 128Mi

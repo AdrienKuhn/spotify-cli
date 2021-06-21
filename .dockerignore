@@ -3,6 +3,7 @@
 .github
 .cache
 cache
+k8s
 *.egg-info
 *.egg/
 **/*.pyc
