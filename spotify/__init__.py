@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import coloredlogs
 import click
 import logging
-import coloredlogs
+import os
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -21,7 +22,7 @@ class Spotify(object):
             scope=self.scope,
             redirect_uri=self.redirect_uri,
             show_dialog=True,
-            cache_path=self.cache_path
+            cache_path = os.getenv("CACHE_PATH", "cache")
         ))
 
 
