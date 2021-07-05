@@ -4,7 +4,5 @@ click==7.1.2
 coloredlogs==14.0
 humanfriendly==8.2
 idna==2.10
-requests==2.24.0
 six==1.15.0
-spotipy==2.13.0
-urllib3==1.26.5
+spotipy==2.18.0

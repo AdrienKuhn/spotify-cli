@@ -1,11 +1,5 @@
 import click
-import spotipy
 import logging
-import os
-from spotipy.oauth2 import SpotifyOAuth
-scope = "user-library-read,user-follow-read,user-follow-modify"
-redirect_uri = "http://localhost:8000/callback"
-cache_path = os.getenv("CACHE_PATH", "cache")
 
 
 @click.group()
@@ -19,34 +13,30 @@ def follow():
 @follow.command("liked-tracks-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--all-artists', is_flag=True, default=False, help="If set, will process liked tracks secondary artists")
-@click.option('--commit', is_flag=True, default=False, help="Use this flag to actually follow artists.")
-def liked_tracks_artists(batch_size, all_artists, commit):
+@click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
+@click.pass_obj
+def liked_tracks_artists(spotify, batch_size, all_artists, commit):
     """Follow artists from all liked tracks"""
     try:
-        logging.info("Starting Spotify API OAuth flow")
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-            scope=scope,
-            redirect_uri=redirect_uri,
-            show_dialog=True,
-            cache_path=cache_path))
+        api = spotify.api
 
         logging.info(f"Batch size is set to {batch_size}")
 
         # Fetch liked tracks
-        liked_tracks = _fetch_liked_tracks(sp, batch_size)
+        liked_tracks = _fetch_liked_tracks(api, batch_size)
 
         # Extract artists from liked tracks
         liked_tracks_artists = _extract_liked_tracks_artists(liked_tracks, all_artists)
 
         # Fetch followed artists
-        followed_artists = _fetch_followed_artists(sp, batch_size)
+        followed_artists = _fetch_followed_artists(api, batch_size)
 
         # Extract artists to follow
         artists_to_follow = _extract_artists_to_follow(liked_tracks_artists, followed_artists)
 
         if artists_to_follow:
             # Follow liked tracks artists
-            _follow_artists(sp, artists_to_follow, batch_size, commit)
+            _follow_artists(api, artists_to_follow, batch_size, commit)
         else:
             logging.warning(f"No new artist to follow.")
 
@@ -61,33 +51,29 @@ def liked_tracks_artists(batch_size, all_artists, commit):
 @follow.command("orphan-artists")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--all-artists', is_flag=True, default=False, help="If set, will process liked tracks secondary artists")
-@click.option('--commit', is_flag=True, default=False, help="Use this flag to actually unfollow artists.")
-def orphan_artists(batch_size, all_artists, commit):
+@click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
+@click.pass_obj
+def orphan_artists(spotify, batch_size, all_artists, commit):
     """Unfollow orphan artists"""
     try:
-        logging.info("Starting Spotify API OAuth flow")
-        sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-            scope=scope,
-            redirect_uri=redirect_uri,
-            show_dialog=True,
-            cache_path=cache_path))
+        api = spotify.api
 
         logging.info(f"Batch size is set to {batch_size}")
 
         # Fetch liked tracks
-        liked_tracks = _fetch_liked_tracks(sp, batch_size)
+        liked_tracks = _fetch_liked_tracks(api, batch_size)
 
         # Extract artists from liked tracks
         liked_tracks_artists = _extract_liked_tracks_artists(liked_tracks, all_artists)
 
         # Fetch followed artists
-        followed_artists = _fetch_followed_artists(sp, batch_size)
+        followed_artists = _fetch_followed_artists(api, batch_size)
 
         # Extract orphan artists
         orphans = _extract_orphan_artists(liked_tracks_artists, followed_artists)
 
         if orphans:
-            _unfollow_artists(sp, orphans, batch_size, commit)
+            _unfollow_artists(api, orphans, batch_size, commit)
         else:
             logging.info(f"No orphan artist found.")
 
@@ -98,11 +84,11 @@ def orphan_artists(batch_size, all_artists, commit):
         raise click.Abort()
 
 
-def _fetch_liked_tracks(sp, batch_size):
-    results = sp.current_user_saved_tracks(limit=batch_size)
+def _fetch_liked_tracks(api, batch_size):
+    results = api.current_user_saved_tracks(limit=batch_size)
     tracks = results['items']
     while results['next']:
-        results = sp.next(results)
+        results = api.next(results)
         logging.info(f"Fetched {results['offset']}/{results['total']} liked tracks... ")
         tracks.extend(results['items'])
     logging.info(f"Fetched {results['total']} tracks")
@@ -110,13 +96,13 @@ def _fetch_liked_tracks(sp, batch_size):
     return tracks
 
 
-def _fetch_followed_artists(sp, batch_size):
-    results = sp.current_user_followed_artists(limit=batch_size)
+def _fetch_followed_artists(api, batch_size):
+    results = api.current_user_followed_artists(limit=batch_size)
     offset = batch_size
     logging.info(f"Fetched {offset}/{results['artists']['total']} artists... ")
     artists = results['artists']['items']
     while results['artists']['next']:
-        results = sp.next(results['artists'])
+        results = api.next(results['artists'])
         offset = offset + batch_size if (offset + batch_size) < results['artists']['total'] else results['artists']['total']
         logging.info(f"Fetched {offset}/{results['artists']['total']} followed artists... ")
         artists.extend(results['artists']['items'])
@@ -151,7 +137,7 @@ def _extract_orphan_artists(liked_tracks_artists, followed_artists):
     return orphans
 
 
-def _follow_artists(sp, artists, batch_size, commit):
+def _follow_artists(api, artists, batch_size, commit):
     if commit:
         logging.warning(f"Will follow {len(artists)} artists")
 
@@ -165,7 +151,7 @@ def _follow_artists(sp, artists, batch_size, commit):
 
             # Follow artists per batch
             batch = artist_ids_to_follow[i:i + limit]
-            sp.user_follow_artists(batch)
+            api.user_follow_artists(batch)
             logging.info(f"Followed {i + limit}/{len(artist_ids_to_follow)} artists...")
 
     else:
@@ -174,7 +160,7 @@ def _follow_artists(sp, artists, batch_size, commit):
         logging.warning(f"Use --commit flag to proceed.")
 
 
-def _unfollow_artists(sp, artists, batch_size, commit):
+def _unfollow_artists(api, artists, batch_size, commit):
     if commit:
         logging.warning(f"Will unfollow {len(artists)} artists")
 
@@ -188,7 +174,7 @@ def _unfollow_artists(sp, artists, batch_size, commit):
 
             # Unfollow artists per batch
             batch = artist_ids_to_unfollow[i:i + limit]
-            sp.user_unfollow_artists(batch)
+            api.user_unfollow_artists(batch)
             logging.info(f"Unfollowed {i + limit}/{len(artist_ids_to_unfollow)} artists...")
 
     else:

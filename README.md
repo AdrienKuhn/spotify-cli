@@ -54,7 +54,7 @@ Options:
   --all-artists               If set, will process liked tracks secondary
                               artists
 
-  --commit                    Use this flag to actually follow artists.
+  --commit                    Use this flag to commit changes.
   --help                      Show this message and exit
 ```
 
@@ -72,7 +72,7 @@ Options:
   --all-artists               If set, will process liked tracks secondary
                               artists
 
-  --commit                    Use this flag to actually unfollow artists.
+  --commit                    Use this flag to commit changes.
   --help                      Show this message and exit.
 ```
 
