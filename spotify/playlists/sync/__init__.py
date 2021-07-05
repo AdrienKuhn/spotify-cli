@@ -34,10 +34,11 @@ def csv_file(spotify, file, playlist, commit):
 @click.option('--rp-user-id', required=True)
 @click.option('--lower-limit', type=click.IntRange(1, 10), default=7)
 @click.option('--higher-limit', type=click.IntRange(1, 10), default=10)
+@click.option('--tmp-file', default='spotify-cli.downloaded.csv')
 @click.option('--playlist', required=True)
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
 @click.pass_obj
-def rp(spotify, rp_user_id, lower_limit, higher_limit, playlist, commit):
+def rp(spotify, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commit):
     """Import music from Radio Paradise favorites to playlist"""
     try:
         api = spotify.api
@@ -51,7 +52,6 @@ def rp(spotify, rp_user_id, lower_limit, higher_limit, playlist, commit):
             f"format=csv"
         ).content
 
-        tmp_file = 'spotify-cli.downloaded.csv'
         csv_file = open(tmp_file, 'wb')
         csv_file.write(content)
         csv_file.close()

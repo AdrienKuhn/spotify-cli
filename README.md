@@ -12,9 +12,12 @@ This CLI allows to you sync your followed artists with your current saved tracks
 ### Docker
 
 ```bash
+export SPOTIPY_CLIENT_ID=
+export SPOTIPY_CLIENT_SECRET=
+
 docker run \
-  -e SPOTIPY_CLIENT_ID= \
-  -e SPOTIPY_CLIENT_SECRET= \
+  -e SPOTIPY_CLIENT_ID=$SPOTIPY_CLIENT_ID \
+  -e SPOTIPY_CLIENT_SECRET=$SPOTIPY_CLIENT_SECRET \
   -e SPOTIPY_REDIRECT_URI=http://localhost:8000 \
   krewh/spotify-cli spotify-cli
 ```
