@@ -14,15 +14,16 @@ def sync():
 
 
 @sync.command("csv-file")
+@click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--file', type=click.Path(exists=True))
 @click.option('--playlist', required=True)
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
 @click.pass_obj
-def csv_file(spotify, file, playlist, commit):
+def csv_file(spotify, batch_size, file, playlist, commit):
     """Import music from CSV to playlist"""
     try:
         api = spotify.api
-        _process_csv(api, file, playlist, commit)
+        _process_csv(api, batch_size, file, playlist, commit)
         logging.info("Done!")
 
     except Exception as err:
@@ -31,6 +32,7 @@ def csv_file(spotify, file, playlist, commit):
 
 
 @sync.command("rp")
+@click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--rp-user-id', required=True)
 @click.option('--lower-limit', type=click.IntRange(1, 10), default=7)
 @click.option('--higher-limit', type=click.IntRange(1, 10), default=10)
@@ -38,7 +40,7 @@ def csv_file(spotify, file, playlist, commit):
 @click.option('--playlist', required=True)
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
 @click.pass_obj
-def rp(spotify, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commit):
+def rp(spotify, batch_size, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commit):
     """Import music from Radio Paradise favorites to playlist"""
     try:
         api = spotify.api
@@ -56,7 +58,7 @@ def rp(spotify, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commi
         csv_file.write(content)
         csv_file.close()
 
-        _process_csv(api, tmp_file, playlist, commit)
+        _process_csv(api, tmp_file, playlist, batch_size, commit)
         os.remove(tmp_file)
         logging.info("Done!")
 
@@ -65,13 +67,14 @@ def rp(spotify, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commi
         raise click.Abort()
 
 
-def _process_csv(api, file, playlist, commit):
+def _process_csv(api, file, playlist, batch_size, commit):
+    tracks_to_add = []
     with open(file, mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         line_count = 0
         failures = 0
 
-        playlist_tracks = _get_playlist_tracks(api, playlist)
+        playlist_tracks = _get_playlist_tracks(api, playlist, batch_size)
 
         for row in csv_reader:
             if line_count == 0:
@@ -86,16 +89,22 @@ def _process_csv(api, file, playlist, commit):
                 continue
 
             if not _track_in_playlist(track_uri, playlist_tracks):
-                if commit:
-                    logging.info(f"Adding {row['title']} - {row['artist']} to playlist")
-                    api.playlist_add_items(playlist, [track_uri])
-                else:
-                    logging.warning(f"Would have added {row['title']} - {row['artist']} to playlist")
-                    logging.warning(f"Use --commit flag to proceed.")
+                logging.warning(f"{row['title']} - {row['artist']} will be added to playlist")
+                tracks_to_add.extend([track_uri])
             else:
                 logging.info(f"{row['title']} - {row['artist']} is already in playlist, skipping...")
 
         logging.info(f'Processed {line_count} lines ({failures} failures).')
+
+    if len(tracks_to_add):
+        if commit:
+            logging.info(f"Adding {len(tracks_to_add)} tracks to playlist")
+            _add_tracks_to_playlist(api, playlist, tracks_to_add, batch_size)
+        else:
+            logging.warning(f"Would have added {len(tracks_to_add)} tracks to playlist")
+            logging.warning(f"Use --commit flag to proceed.")
+    else:
+        logging.info('No new tracks to add')
 
 
 def _search_track(api, title, artist):
@@ -115,6 +124,34 @@ def _track_in_playlist(track_uri, playlist_tracks):
     return any(item['track']['uri'] == track_uri for item in playlist_tracks)
 
 
-def _get_playlist_tracks(api, playlist):
-    tracks = api.playlist_tracks(playlist)
-    return tracks['items']
+def _get_playlist_tracks(api, playlist, batch_size):
+    results = api.playlist_tracks(playlist, limit=batch_size)
+    offset = batch_size
+    logging.info(f"Fetched {offset}/{results['total']} tracks from existing playlist...")
+    tracks = results['items']
+    while results['next']:
+        results = api.next(results)
+        offset = offset + batch_size if (offset + batch_size) < results['total'] else results['total']
+        logging.info(f"Fetched {offset}/{results['total']} tracks from existing playlist... ")
+        tracks.extend(results['items'])
+    logging.info(f"Fetched {len(tracks)} tracks from existing playlist")
+
+    return tracks
+
+
+def _split_chunks(chunk, size):
+    chunks = [chunk[i * size:(i + 1) * size] for i in range((len(chunk) + size - 1) // size)]
+
+    return chunks
+
+
+def _add_tracks_to_playlist(api, playlist, tracks, batch_size):
+    chunks = _split_chunks(tracks, batch_size)
+    offset = batch_size
+
+    for chunk in chunks:
+        api.playlist_add_items(playlist, chunk)
+        logging.info(f"Added {offset}/{len(tracks)} tracks to playlist...")
+        offset = offset + batch_size if (offset + batch_size) < len(tracks) else len(tracks)
+
+    logging.info(f"Added {len(tracks)} tracks to playlist")
