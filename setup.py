@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-PACKAGE_VERSION = "0.0.10rc3"
+PACKAGE_VERSION = "0.0.10rc4"
 PACKAGE_NAME = "spotify-cli"
 
 if __name__ == "__main__":
