@@ -16,14 +16,14 @@ def sync():
 @sync.command("csv-file")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
 @click.option('--file', type=click.Path(exists=True))
-@click.option('--playlist', required=True)
+@click.option('--playlist', required=True, help="Spotify playlist id")
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
 @click.pass_obj
 def csv_file(spotify, batch_size, file, playlist, commit):
     """Import music from CSV to playlist"""
     try:
         api = spotify.api
-        _process_csv(api, batch_size, file, playlist, commit)
+        _process_csv(api, file, playlist, batch_size, commit)
         logging.info("Done!")
 
     except Exception as err:
@@ -33,11 +33,11 @@ def csv_file(spotify, batch_size, file, playlist, commit):
 
 @sync.command("rp")
 @click.option('--batch-size', type=click.IntRange(1, 50), default=50)
-@click.option('--rp-user-id', required=True)
-@click.option('--lower-limit', type=click.IntRange(1, 10), default=7)
-@click.option('--higher-limit', type=click.IntRange(1, 10), default=10)
+@click.option('--rp-user-id', required=True, help="Radio Paradise user ID")
+@click.option('--lower-limit', type=click.IntRange(1, 10), default=7, help="Radio Paradise rating lower limit")
+@click.option('--higher-limit', type=click.IntRange(1, 10), default=10, help="Radio Paradise rating higher limit")
 @click.option('--tmp-file', default='spotify-cli.downloaded.csv')
-@click.option('--playlist', required=True)
+@click.option('--playlist', required=True, help="Spotify playlist id")
 @click.option('--commit', is_flag=True, default=False, help="Use this flag to commit changes.")
 @click.pass_obj
 def rp(spotify, batch_size, rp_user_id, lower_limit, higher_limit, tmp_file, playlist, commit):
