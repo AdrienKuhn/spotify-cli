@@ -1,7 +1,8 @@
 # spotify-cli
 
-Spotify doesn't automatically follow artists when saving tracks.  
-This CLI allows to you sync your followed artists with your current saved tracks.
+This CLI allows:
+* to you sync your followed artists with your current saved tracks (Spotify doesn't automatically follow artists when saving tracks)
+* to import a CSV file into a playlist
 
 ## Requirements
 * Python >=3.7
@@ -12,9 +13,12 @@ This CLI allows to you sync your followed artists with your current saved tracks
 ### Docker
 
 ```bash
+export SPOTIPY_CLIENT_ID=
+export SPOTIPY_CLIENT_SECRET=
+
 docker run \
-  -e SPOTIPY_CLIENT_ID= \
-  -e SPOTIPY_CLIENT_SECRET= \
+  -e SPOTIPY_CLIENT_ID=$SPOTIPY_CLIENT_ID \
+  -e SPOTIPY_CLIENT_SECRET=$SPOTIPY_CLIENT_SECRET \
   -e SPOTIPY_REDIRECT_URI=http://localhost:8000 \
   krewh/spotify-cli spotify-cli
 ```
@@ -36,7 +40,8 @@ Options:
   --help                          Show this message and exit.
 
 Commands:
-  artists  Use this command to manage artists
+  artists    Use this command to manage artists
+  playlists  Use this command to manage playlists
 ```
 
 ## Examples
@@ -54,7 +59,7 @@ Options:
   --all-artists               If set, will process liked tracks secondary
                               artists
 
-  --commit                    Use this flag to actually follow artists.
+  --commit                    Use this flag to commit changes.
   --help                      Show this message and exit
 ```
 
@@ -63,6 +68,7 @@ Options:
 Unfollow artists without liked tracks in library
 
 ```bash
+spotify-cli artists follow orphan-artists --help
 Usage: spotify-cli artists follow orphan-artists [OPTIONS]
 
   Unfollow orphan artists
@@ -72,7 +78,32 @@ Options:
   --all-artists               If set, will process liked tracks secondary
                               artists
 
-  --commit                    Use this flag to actually unfollow artists.
+  --commit                    Use this flag to commit changes.
+  --help                      Show this message and exit.
+```
+
+### Import CSV file into a playlist
+
+CSV should have the following syntax:
+
+```
+title,artist,album,year,rating
+"Carolina Low","The Decemberists","What a Terrible World, What a Beautiful World",2015,10
+```
+
+Only `title` and `artist` are mandatory.
+
+```bash
+spotify-cli playlists sync csv-file --help
+Usage: spotify-cli playlists sync csv-file [OPTIONS]
+
+  Import music from CSV to playlist
+
+Options:
+  --batch-size INTEGER RANGE
+  --file PATH
+  --playlist TEXT             Spotify playlist id  [required]
+  --commit                    Use this flag to commit changes.
   --help                      Show this message and exit.
 ```
 
