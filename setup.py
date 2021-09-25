@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-PACKAGE_VERSION = "0.0.10"
+PACKAGE_VERSION = "0.0.12"
 PACKAGE_NAME = "spotify-cli"
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         install_requires=[
             "click==7.1.2",
             "coloredlogs==14.0",
-            "spotipy==2.18.0"
+            "spotipy==2.19.0"
         ],
         entry_points={"console_scripts": ["spotify-cli=spotify:main"]}
     )
