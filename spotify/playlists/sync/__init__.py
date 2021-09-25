@@ -1,6 +1,7 @@
 import click
 import csv
 import os
+import re
 import requests
 import logging
 
@@ -68,6 +69,16 @@ def rp(spotify, batch_size, rp_user_id, lower_limit, higher_limit, tmp_file, pla
 
 
 def _process_csv(api, file, playlist, batch_size, commit):
+    """
+    Process a CSV file
+
+    :param api:
+    :param file:
+    :param playlist:
+    :param batch_size:
+    :param commit:
+    :return:
+    """
     tracks_to_add = []
     with open(file, mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
@@ -81,16 +92,19 @@ def _process_csv(api, file, playlist, batch_size, commit):
                 logging.debug(f'Column names are {", ".join(row)}')
                 line_count += 1
 
-            track_uri = _search_track(api, row['title'], row['artist'])
+            tracks = _search_track(api, row['title'], row['artist'])
             line_count += 1
 
-            if not track_uri:
+            if not len(tracks):
+                logging.error(f"No result for {row['title']} - {row['artist']}")
                 failures += 1
                 continue
 
-            if not _track_in_playlist(track_uri, playlist_tracks):
+            logging.debug(f"Found {row['title']} - {row['artist']}")
+
+            if not _track_in_playlist(tracks, playlist_tracks):
                 logging.warning(f"{row['title']} - {row['artist']} will be added to playlist")
-                tracks_to_add.extend([track_uri])
+                tracks_to_add.extend([tracks[0]['uri']])
             else:
                 logging.info(f"{row['title']} - {row['artist']} is already in playlist, skipping...")
 
@@ -108,23 +122,51 @@ def _process_csv(api, file, playlist, batch_size, commit):
 
 
 def _search_track(api, title, artist):
-    logging.debug(f"Query: artist: {artist} track: {title}")
-    results = api.search(q=f"artist: {artist} track: {title}", type='track')
+    """
+    Search for a Spotify track based on title and artist
 
-    if len(results['tracks']['items']) == 0:
-        logging.error(f"No result for {title} - {artist}")
-        return 0
+    :param api:
+    :param title:
+    :param artist:
+    :return:
+    """
+    # Query
+    q = f'artist:{_sanitize_str(artist)} track:{_sanitize_str(title)}'
+    logging.debug(q)
+    results = api.search(
+        q=q,
+        type='track'
+    )
 
-    logging.debug(f"Found {title} - {artist}")
-
-    return results['tracks']['items'][0]['uri']
+    return results['tracks']['items']
 
 
-def _track_in_playlist(track_uri, playlist_tracks):
-    return any(item['track']['uri'] == track_uri for item in playlist_tracks)
+def _track_in_playlist(tracks, playlist_tracks):
+    """
+    Check if a track URI is already in the Spotify playlist
+
+    :param tracks:
+    :param playlist_tracks:
+    :return:
+    """
+    playlist_tracks_uris = [item['track']['uri'] for item in playlist_tracks]
+
+    for track in tracks:
+        if track['uri'] in playlist_tracks_uris:
+            return True
+
+    return False
 
 
 def _get_playlist_tracks(api, playlist, batch_size):
+    """
+    Get all tracks from the Spotify playlist
+
+    :param api:
+    :param playlist:
+    :param batch_size:
+    :return:
+    """
     results = api.playlist_tracks(playlist, limit=batch_size)
     offset = batch_size
     logging.info(f"Fetched {offset}/{results['total']} tracks from existing playlist...")
@@ -146,6 +188,15 @@ def _split_chunks(chunk, size):
 
 
 def _add_tracks_to_playlist(api, playlist, tracks, batch_size):
+    """
+    Add a track to the Spotify playlist
+
+    :param api:
+    :param playlist:
+    :param tracks:
+    :param batch_size:
+    :return:
+    """
     chunks = _split_chunks(tracks, batch_size)
     offset = batch_size
 
@@ -155,3 +206,12 @@ def _add_tracks_to_playlist(api, playlist, tracks, batch_size):
         offset = offset + batch_size if (offset + batch_size) < len(tracks) else len(tracks)
 
     logging.info(f"Added {len(tracks)} tracks to playlist")
+
+
+def _sanitize_str(s):
+    """
+    Remove special characters from string
+    :param s:
+    :return:
+    """
+    return re.sub("[`\'$@&.]", "", s)
