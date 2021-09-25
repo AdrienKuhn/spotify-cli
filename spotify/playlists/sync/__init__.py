@@ -130,12 +130,8 @@ def _search_track(api, title, artist):
     :param artist:
     :return:
     """
-    # Remove special characters
-    artist = re.sub("[`\'$@&.]", "", artist)
-    title = re.sub("[`\'$@&.]", "", title)
-
     # Query
-    q = f'artist:{artist} track:{title}'
+    q = f'artist:{_sanitize_str(artist)} track:{_sanitize_str(title)}'
     logging.debug(q)
     results = api.search(
         q=q,
@@ -210,3 +206,12 @@ def _add_tracks_to_playlist(api, playlist, tracks, batch_size):
         offset = offset + batch_size if (offset + batch_size) < len(tracks) else len(tracks)
 
     logging.info(f"Added {len(tracks)} tracks to playlist")
+
+
+def _sanitize_str(s):
+    """
+    Remove special characters from string
+    :param s:
+    :return:
+    """
+    return re.sub("[`\'$@&.]", "", s)
