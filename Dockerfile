@@ -1,4 +1,4 @@
-FROM python:3.9.7-slim AS compile-image
+FROM python:3.9.10-slim AS compile-image
 WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git
@@ -9,7 +9,7 @@ COPY setup.py ./
 COPY spotify/ spotify/
 RUN pip install .
 
-FROM python:3.9.7-slim AS runtime-image
+FROM python:3.9.10-slim AS runtime-image
 COPY --from=compile-image /opt/venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 RUN useradd -ms /bin/sh -u 1000 spotify
