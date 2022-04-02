@@ -1,5 +1,7 @@
 # spotify-cli
 
+[![CircleCI](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main.svg?style=shield)](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main)
+
 This CLI allows:
 * to you sync your followed artists with your current saved tracks (Spotify doesn't automatically follow artists when saving tracks)
 * to import a CSV file into a playlist
@@ -8,9 +10,14 @@ This CLI allows:
 * Python >=3.7
 * a [Spotify for Developers](https://developer.spotify.com/) application
 
-## Installation
+## Usage
 
-### Docker
+### Docker images
+
+Multi-arch docker images are available on [Docker Hub](https://hub.docker.com/r/krewh/spotify-cli):
+
+* The `latest` tag is built from the main branch.  
+* The `latest` tag and the last release tag are refreshed nightly to get the latest security updates.
 
 ```bash
 export SPOTIPY_CLIENT_ID=
@@ -21,27 +28,6 @@ docker run \
   -e SPOTIPY_CLIENT_SECRET=$SPOTIPY_CLIENT_SECRET \
   -e SPOTIPY_REDIRECT_URI=http://localhost:8000 \
   krewh/spotify-cli spotify-cli
-```
-
-### Local
-```bash
-pip install .
-
-export SPOTIPY_CLIENT_ID=
-export SPOTIPY_CLIENT_SECRET=
-export SPOTIPY_REDIRECT_URI=http://localhost:8000
-
-spotify-cli --help
-Usage: spotify-cli [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  --level [CRITICAL|ERROR|WARNING|INFO|DEBUG]
-                                  Verbose level
-  --help                          Show this message and exit.
-
-Commands:
-  artists    Use this command to manage artists
-  playlists  Use this command to manage playlists
 ```
 
 ## Examples
@@ -109,7 +95,7 @@ Options:
 
 ## Kubernetes CronJobs
 
-See [k8s](./k8s)
+See [k8s](./k8s).
 
 ## Development
 
@@ -117,4 +103,20 @@ In a virtual environment, follow installation instructions but use the `--editab
 
 ```bash
 pip install --editable .
+
+export SPOTIPY_CLIENT_ID=
+export SPOTIPY_CLIENT_SECRET=
+export SPOTIPY_REDIRECT_URI=http://localhost:8000
+
+spotify-cli --help
+Usage: spotify-cli [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --level [CRITICAL|ERROR|WARNING|INFO|DEBUG]
+                                  Verbose level
+  --help                          Show this message and exit.
+
+Commands:
+  artists    Use this command to manage artists
+  playlists  Use this command to manage playlists
 ```
