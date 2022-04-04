@@ -1,6 +1,6 @@
 # spotify-cli
 
-[![CircleCI](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main.svg?style=shield)](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main)
+[![CircleCI](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main.svg?style=shield&circle-token=f691651f1d08db233fc71e152bf93bb413d6f423)](https://circleci.com/gh/AdrienKuhn/spotify-cli/tree/main)
 
 This CLI allows:
 * to you sync your followed artists with your current saved tracks (Spotify doesn't automatically follow artists when saving tracks)
