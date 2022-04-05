@@ -29,6 +29,7 @@ commands:
           name: Login to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login --username "$DOCKERHUB_USER" --password-stdin
+
   # Get and export the current branch or current tag
   get-branch-or-tag:
     steps:
@@ -42,6 +43,7 @@ commands:
             else
               echo 'export TAG="${CIRCLE_TAG:-$CIRCLE_BRANCH}"' >> $BASH_ENV
             fi
+
   # Get the last tagged release
   get-last-tag:
     steps:
@@ -50,6 +52,7 @@ commands:
           command: |
             echo `git describe --tags --abbrev=0`
             echo 'export LAST_TAG=`git describe --tags --abbrev=0`' >> $BASH_ENV
+
   # Reset HEAD to a tag
   reset-to-tag:
     parameters:
@@ -89,6 +92,29 @@ commands:
               --platform <<pipeline.parameters.platform>> \
               --tag <<pipeline.parameters.image-name>>:<<parameters.tag>> \
               .
+
+  # Bump tag
+  bump-tag:
+    steps:
+      - run:
+          name: Bump tag
+          command: |
+            if [ -z ${LAST_TAG} ]; then
+              echo <<pipeline.parameters.default-tag>>
+              echo "export NEW_TAG=<<pipeline.parameters.default-tag>>" >> $BASH_ENV;
+            else
+              echo $(echo ${LAST_TAG} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+              echo "export NEW_TAG=`echo $(echo ${LAST_TAG} | awk -F. -v OFS=. '{$NF += 1 ; print}')`" >> $BASH_ENV
+            fi
+
+  # Create a GitHub release
+  create-release:
+    steps:
+      - run:
+          name: Create GitHub release
+          command: |
+            echo $NEW_TAG
+            gh release create $NEW_TAG --generate-notes
 
 jobs:
   # Build for multiarch and push
