@@ -15,7 +15,7 @@ if __name__ == "__main__":
             "click==7.1.2",
             "coloredlogs==14.0",
             "requests==2.25.1",
-            "spotipy==2.19.0"
+            "spotipy==2.22.1"
         ],
         entry_points={"console_scripts": ["spotify-cli=spotify:main"]}
     )
