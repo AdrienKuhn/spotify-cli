@@ -14,7 +14,7 @@ if __name__ == "__main__":
         install_requires=[
             "click==7.1.2",
             "coloredlogs==14.0",
-            "requests==2.25.1",
+            "requests==2.31.0",
             "spotipy==2.22.1"
         ],
         entry_points={"console_scripts": ["spotify-cli=spotify:main"]}
