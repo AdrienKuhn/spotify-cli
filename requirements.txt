@@ -1,4 +1,6 @@
 click==7.1.2
 coloredlogs==14.0
-requests==2.25.1
+requests==2.32.2
 spotipy==2.22.1
+idna>=3.7 # not directly required, pinned by Snyk to avoid a vulnerability
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
